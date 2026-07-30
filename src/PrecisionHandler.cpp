@@ -192,11 +192,28 @@ PrecisionHandler::EventResult PrecisionHandler::ProcessEvent(const RE::BSAnimati
 		}
 	case "Collision_AttackEnd"_h:
 	case "attackStop"_h:
+		{
+			// Dual-wield: remove only the finishing hand. 1H: RemoveAll (clears FLT_MAX hit-locks).
+			const auto actorHandle = actor->GetHandle();
+			auto activeActor = GetActiveActor(actorHandle);
+			const bool bothHands =
+				activeActor &&
+				activeActor->attackCollisions.HasNode("WEAPON"sv) &&
+				activeActor->attackCollisions.HasNode("SHIELD"sv);
+			if (bothHands) {
+				if (auto& attackData = Actor_GetAttackData(actor)) {
+					RemoveAttackCollisionsForHand(actorHandle, attackData->IsLeftAttack());
+				} else {
+					activeActor->attackCollisions.ClearAllHitRefs();
+				}
+			} else {
+				RemoveAllAttackCollisions(actorHandle);
+			}
+			break;
+		}
 	case "staggerStart"_h:
 	case "Collision_Cancel"_h:
 		{
-			//ClearHitRefs(actor->GetHandle());
-			//remove all collisions to be safe
 			RemoveAllAttackCollisions(actor->GetHandle());
 			break;
 		}
@@ -504,6 +521,16 @@ bool PrecisionHandler::RemoveAttackCollision(RE::ActorHandle a_actorHandle, cons
 {
 	if (auto activeActor = GetActiveActor(a_actorHandle)) {
 		return activeActor->attackCollisions.RemoveAttackCollision(a_collisionDefinition);
+	}
+
+	return false;
+}
+
+bool PrecisionHandler::RemoveAttackCollisionsForHand(RE::ActorHandle a_actorHandle, bool a_leftHand)
+{
+	if (auto activeActor = GetActiveActor(a_actorHandle)) {
+		return activeActor->attackCollisions.RemoveAttackCollisionsByNodeName(
+			a_leftHand ? "SHIELD"sv : "WEAPON"sv);
 	}
 
 	return false;

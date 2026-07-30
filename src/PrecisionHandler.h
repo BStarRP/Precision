@@ -92,6 +92,8 @@ public:
 	bool RemoveRecoilCollision(RE::ActorHandle a_actorHandle);
 	bool RemoveAttackCollision(RE::ActorHandle a_actorHandle, const CollisionDefinition& a_collisionDefinition);
 	bool RemoveAttackCollision(RE::ActorHandle a_actorHandle, std::shared_ptr<AttackCollision> a_attackCollision);
+	/** Dual-wield safe: tear down only the finishing hand (WEAPON vs SHIELD). */
+	bool RemoveAttackCollisionsForHand(RE::ActorHandle a_actorHandle, bool a_leftHand);
 	bool RemoveAllAttackCollisions(RE::ActorHandle a_actorHandle);
 	std::shared_ptr<AttackCollision> GetAttackCollision(RE::ActorHandle a_actorHandle, RE::NiAVObject* a_node) const;
 	std::shared_ptr<AttackCollision> GetAttackCollisionFromRecoilNode(RE::ActorHandle a_actorHandle, RE::NiAVObject* a_node) const;

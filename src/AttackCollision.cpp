@@ -772,6 +772,11 @@ std::shared_ptr<AttackCollision> AttackCollisions::GetAttackCollisionFromRecoilN
 
 void AttackCollisions::AddAttackCollision(RE::ActorHandle a_actorHandle, const CollisionDefinition& a_collisionDefinition)
 {
+	// Drop prior WEAPON/SHIELD capsule so FLT_MAX hit-refs cannot block the next swing.
+	if (a_collisionDefinition.nodeName == "WEAPON"sv || a_collisionDefinition.nodeName == "SHIELD"sv) {
+		RemoveAttackCollisionsByNodeName(a_collisionDefinition.nodeName);
+	}
+
 	auto newAttackCollision = std::make_shared<AttackCollision>(a_actorHandle, a_collisionDefinition);
 
 	if (newAttackCollision->IsValid()) {
@@ -830,6 +835,63 @@ bool AttackCollisions::RemoveAttackCollision(std::shared_ptr<AttackCollision> a_
 	}
 
 	return prevSize != _attackCollisions.size();
+}
+
+bool AttackCollisions::RemoveAttackCollisionsByNodeName(std::string_view a_nodeName)
+{
+	WriteLocker locker(lock);
+
+	const auto prevSize = _attackCollisions.size();
+	std::vector<uint8_t> idsToClear;
+
+	_attackCollisions.erase(
+		std::remove_if(_attackCollisions.begin(), _attackCollisions.end(),
+			[a_nodeName, &idsToClear](auto& attackCollision) {
+				if (!attackCollision || attackCollision->nodeName != a_nodeName) {
+					return false;
+				}
+				if (attackCollision->ID) {
+					idsToClear.push_back(*attackCollision->ID);
+				}
+				return true;
+			}),
+		_attackCollisions.end());
+
+	for (const auto id : idsToClear) {
+		ClearIDHitRefs(id);
+	}
+
+	if (_attackCollisions.empty()) {
+		ClearData();
+	}
+
+	return prevSize != _attackCollisions.size();
+}
+
+bool AttackCollisions::HasNode(std::string_view a_nodeName) const
+{
+	ReadLocker locker(lock);
+
+	return std::any_of(_attackCollisions.begin(), _attackCollisions.end(),
+		[a_nodeName](const auto& attackCollision) {
+			return attackCollision && attackCollision->nodeName == a_nodeName;
+		});
+}
+
+void AttackCollisions::ClearAllHitRefs()
+{
+	ReadLocker locker(lock);
+
+	for (auto& attackCollision : _attackCollisions) {
+		if (attackCollision) {
+			attackCollision->ClearHitRefs();
+		}
+	}
+
+	for (auto& [id, hitRefs] : _IDHitRefs) {
+		(void)id;
+		hitRefs.ClearHitRefs();
+	}
 }
 
 bool AttackCollisions::RemoveAllAttackCollisions()

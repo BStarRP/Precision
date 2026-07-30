@@ -72,7 +72,11 @@ struct AttackCollisions
 	bool RemoveRecoilCollision();
 	[[nodiscard]] bool RemoveAttackCollision(const CollisionDefinition& a_collisionDefinition);
 	[[nodiscard]] bool RemoveAttackCollision(std::shared_ptr<AttackCollision> a_attackCollision);
+	/** Remove capsules on one node (WEAPON or SHIELD); ClearData when none remain. */
+	bool RemoveAttackCollisionsByNodeName(std::string_view a_nodeName);
 	bool RemoveAllAttackCollisions();
+	[[nodiscard]] bool HasNode(std::string_view a_nodeName) const;
+	void ClearAllHitRefs();
 
 	void OnCollisionRemoved();
 	void ClearData();

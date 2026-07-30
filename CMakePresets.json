@@ -9,7 +9,7 @@
         }
       },
       "errors": {
-        "deprecated": true
+        "deprecated": false
       },
       "hidden": true,
       "name": "cmake-dev",
